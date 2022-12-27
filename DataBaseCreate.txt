@@ -1,0 +1,66 @@
+
+            //string adminRoleName = "admin";
+            //string userRoleName = "user";
+            //RoleModel adminRole = new RoleModel { Id = 1, Name = adminRoleName };
+            //RoleModel userRole = new RoleModel { Id = 2, Name = userRoleName };
+            //ChanelModel adminChanel = new ChanelModel { Id = 1, GroupName="simple1" };
+            //ChanelModel adminsimple = new ChanelModel { Id = 2,  GroupName = "simple2" };
+            //ChanelModel adminsimple2 = new ChanelModel { Id = 3,  GroupName = "simple3" };
+            //ChanelModel adminsimple3 = new ChanelModel { Id=4, GroupName = "simple4" };
+            //UserModel adminUser1 = new UserModel { Id = 1, UserName = "admin@mail.com", Password = "123456", RoleID = adminRole.Id };//,Chanels = new List<ChanelModel> { adminChanel, adminsimple,adminsimple3 } };
+            //UserModel adminUser2 = new UserModel { Id = 2, UserName = "tom@mail.com", Password = "123456", RoleID = adminRole.Id };//, Chanels = new List<ChanelModel> { adminChanel, adminsimple2 } };
+            //UserModel simpleUser1 = new UserModel { Id = 3, UserName = "bob@mail.com", Password = "123456", RoleID = userRole.Id };//, Chanels = new List<ChanelModel> {  adminsimple, adminsimple2 } };
+            //UserModel simpleUser2 = new UserModel { Id = 4, UserName = "sam@mail.com", Password = "123456", RoleID = userRole.Id };//, Chanels = new List<ChanelModel> { adminsimple3 } };
+
+            ////adminChanel.Users = new List<UserModel> { adminUser1, adminUser2 };
+            ////adminsimple.Users = new List<UserModel> { adminUser1, simpleUser1 };
+            ////adminsimple2.Users = new List<UserModel> { simpleUser1, adminUser2 };
+            ////adminsimple3.Users = new List<UserModel> { adminUser1, simpleUser2 };
+            //MessageData message1 = new MessageData {Id=1, Message = "sample", AuthorID =1, ChanelID = 1 };
+            //MessageData message2 = new MessageData { Id =2, Message = "sample", AuthorID = 1, ChanelID = 1, Time = DateTime.Now };
+            //MessageData message3 = new MessageData { Id = 3, Message = "sample", AuthorID = 2, ChanelID = 1, Time = DateTime.Now };
+            //MessageData message4 = new MessageData { Id =4, Message = "sample", AuthorID =2, ChanelID = 3, Time = DateTime.Now };
+            //MessageData message5 = new MessageData { Id =5, Message = "sample", AuthorID = 1, ChanelID = 2, Time = DateTime.Now };
+            //MessageData message6 = new MessageData { Id =6, Message = "sample", AuthorID = 3, ChanelID = 2, Time = DateTime.Now };
+            //MessageData message7 = new MessageData { Id =7, Message = "sample", AuthorID = 1, ChanelID = 4, Time = DateTime.Now };
+            //MessageData message8 = new MessageData { Id = 8,Message = "sample", AuthorID = 4, ChanelID = 4, Time = DateTime.Now };
+            //MessageData message9 = new MessageData { Id =9, Message = "sample", AuthorID = 2, ChanelID = 3, Time = DateTime.Now };
+            //MessageData message10 = new MessageData { Id =10, Message = "sample", AuthorID = 3, ChanelID = 3, Time = DateTime.Now };
+            //modelBuilder.Entity<RoleModel>().HasData(new RoleModel[] { adminRole, userRole });
+            //modelBuilder.Entity<MessageData>().HasData(new MessageData[] { message1, message2,message3, message4, message6, message5, message7, message8, message9, message10 });
+            //modelBuilder.Entity<UserModel>().HasData(new UserModel[] { adminUser1, adminUser2, simpleUser1, simpleUser2 });
+            //modelBuilder.Entity<ChanelModel>().HasData(new ChanelModel[] { adminChanel, adminsimple, adminsimple2, adminsimple3 });
+
+
+public async Task start(string un)
+        {
+            HubConnection hubConnection;
+            string? myAccessToken = "";
+            hubConnection = new HubConnectionBuilder()
+            .WithUrl("http://localhost:5249/chat", o =>
+            {
+                o.AccessTokenProvider = () => Task.FromResult(myAccessToken);
+            })
+            .Build();
+            HttpClient Client = new();
+            RoleModel adminRole = new RoleModel { Id = 1, Name = "admin" };
+            UserModel newUser = new UserModel { UserName = un, Password = "123456", RoleID = adminRole.Id };
+            var newUserSerialized = JsonConvert.SerializeObject(newUser);
+            HttpContent content = new StringContent(newUserSerialized, Encoding.UTF8, "application/json");
+            var url = new Uri("http://localhost:5249/Account/Token");
+            HttpResponseMessage response = await Client.PostAsync(url, content);
+            newUserSerialized = await response.Content.ReadAsStringAsync();
+            myAccessToken = JsonConvert.DeserializeObject<string>(newUserSerialized);
+            await hubConnection.StartAsync();
+            if (hubConnection.State == HubConnectionState.Connected)
+            {
+                //IsViewVisible = false;
+                ChatView cv = new(hubConnection, un);
+                cv.Show();
+            }
+        }
+        private async void Application_Startup(object sender, StartupEventArgs e)
+        {
+            await start("tom@mail.com");
+            await start("admin@mail.com");
+        }
